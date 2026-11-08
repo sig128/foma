@@ -328,6 +328,7 @@ function drawReceiptCanvas(r) {
   return cv;
 }
 async function saveCanvas(cv, filename) {
+  if (!CAP.dl && !window.claude) { cv.toBlob(b => { if (!b) { toast('Couldn’t make the image.'); return; } const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); toast('Saved'); }, 'image/png'); return; }
   if (!CAP.dl) { toast('Saving files isn’t available in this view. Use "Copy summary" instead.'); return; }
   cv.toBlob(async b => { try { await CAP.dl.save({ filename, data: b }); toast('Saved'); } catch (e) { if (e?.code === 'declined') return; toast(e?.code === 'rate_limited' ? 'A save prompt is already open.' : 'Saving isn’t available here right now.'); } }, 'image/png');
 }

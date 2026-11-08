@@ -1,22 +1,30 @@
-"""Bundle FOMA's source files into one self-contained HTML page."""
+"""Bundle FOMA's app source into one self-contained page, dist/foma.html, for Claude artifacts."""
 import json, pathlib, sys
 
-root = pathlib.Path(__file__).parent
-src = root / "src"
-logos_path = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else root / "logos.json"
-out = root / "dist" / "foma.html"
+ROOT = pathlib.Path(__file__).parent
+SRC = ROOT / "src"
+JS_FILES = ["data.js", "core.js", "views.js", "exec.js", "ai.js", "boot.js"]
 
-logos = json.loads(logos_path.read_text())
-css = (src / "styles.css").read_text()
-js_parts = [f"const LOGOS = {json.dumps(logos, separators=(',', ':'))};"]
-for name in ["data.js", "core.js", "views.js", "exec.js", "ai.js", "boot.js"]:
-    js_parts.append(f"// ---- {name} ----\n" + (src / name).read_text())
-js = "\n".join(js_parts)
-if "</script" in js.lower():
-    raise SystemExit("script contains a closing script tag")
-shell = (src / "shell.html").read_text()
-html = shell.replace("/*__CSS__*/", css).replace("/*__JS__*/", js)
-out.parent.mkdir(exist_ok=True)
-out.write_text(html)
-(root / "dist" / "app.js").write_text("(() => {\n'use strict';\n" + js + "\n})();\n")
-print(f"wrote {out} ({out.stat().st_size / 1024:.1f} KB)")
+
+def bundle(logos_path=None):
+    """Return (shell_html, css, js) for the app."""
+    logos = json.loads(pathlib.Path(logos_path or ROOT / "logos.json").read_text())
+    parts = [f"const LOGOS = {json.dumps(logos, separators=(',', ':'))};"]
+    parts += [f"// ---- {name} ----\n" + (SRC / name).read_text() for name in JS_FILES]
+    js = "\n".join(parts)
+    if "</script" in js.lower():
+        raise SystemExit("app script contains a closing script tag")
+    return (SRC / "shell.html").read_text(), (SRC / "styles.css").read_text(), js
+
+
+def main():
+    shell, css, js = bundle(sys.argv[1] if len(sys.argv) > 1 else None)
+    out = ROOT / "dist" / "foma.html"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(shell.replace("/*__CSS__*/", css).replace("/*__JS__*/", js))
+    (ROOT / "dist" / "app.js").write_text("(() => {\n'use strict';\n" + js + "\n})();\n")
+    print(f"wrote {out} ({out.stat().st_size / 1024:.1f} KB)")
+
+
+if __name__ == "__main__":
+    main()

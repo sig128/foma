@@ -2121,6 +2121,8 @@ const APP_URL = 'https://claude.ai/artifact/TDYxUeAktuvFsbACz5R2b3';
 const UPDATED = '7 Nov 2026';
 const KBD = IS_MAC ? '⌘K' : 'Ctrl K';
 const CAP = { sample: null };
+const AI_ON = !!(window.claude && typeof window.claude.use === 'function');
+const SEARCH_TXT = AI_ON ? 'Search the docs or ask a question' : 'Search the docs';
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 let CUR = null;
 const WIDGET_COUNT = new Set(PAGES.flatMap(p => p.lines.map(l => (l.match(/^@@([\w-]+)/) || [])[1]).filter(n => n && W[n]))).size;
@@ -2179,7 +2181,7 @@ function shellHTML() {
   return `<button class="skip" type="button" data-act="skip">Skip to content</button>
   <header class="dtop"><button class="menu" type="button" data-act="menu" aria-label="Open navigation">${I.menu}</button>
     <a class="brand" href="#welcome" aria-label="FOMA Docs home">${MARK}<span>foma</span><span class="sub">docs</span></a><span class="ver">Prototype</span>
-    <button class="sbtn" type="button" data-act="pal" aria-label="Search the docs">${I.search}<span class="t">Search the docs or ask a question</span><kbd>${KBD}</kbd></button>
+    <button class="sbtn" type="button" data-act="pal" aria-label="Search the docs">${I.search}<span class="t">${SEARCH_TXT}</span><kbd>${KBD}</kbd></button>
     <nav class="tlinks" aria-label="Shortcuts"><a class="tl" href="#quickstart">Quickstart</a><a class="tl" href="#faq">FAQ</a><a class="tl" href="#changelog">Changelog</a><a class="btn pri sm" href="${APP_URL}" target="_blank" rel="noopener"><span class="t2">Open app</span>${I.ext}</a></nav></header>
   <div class="dwrap" id="dwrap"><nav class="dnav" id="dnav" aria-label="Documentation">${navHTML()}</nav><main class="dmain" id="main" tabindex="-1"></main><aside class="dtoc" id="toc" aria-label="On this page"></aside></div>`;
 }
@@ -2189,7 +2191,7 @@ function setNav() {
 }
 function tocHTML(heads) {
   return `${heads.length ? `<h4>On this page</h4><ul>${heads.map(x => `<li class="h${x.lvl}"><a href="#${x.id}" data-h="${x.id}">${esc(x.text)}</a></li>`).join('')}</ul>` : ''}<div class="prog" aria-hidden="true"><i id="progbar"></i></div>
-    <div class="tocbox"><span>Something this page doesn’t answer?</span><button class="btn sm" type="button" data-act="askpage">${I.spark}<span>Ask Claude</span></button><a class="btn sm ghost" href="${APP_URL}" target="_blank" rel="noopener">Open the app ${I.ext}</a></div>`;
+    <div class="tocbox"><span>Something this page doesn’t answer?</span>${AI_ON ? `<button class="btn sm" type="button" data-act="askpage">${I.spark}<span>Ask Claude</span></button>` : `<button class="btn sm" type="button" data-act="pal">${I.search}<span>Search the docs</span></button>`}<a class="btn sm ghost" href="${APP_URL}" target="_blank" rel="noopener">Open the app ${I.ext}</a></div>`;
 }
 
 // ---------- the magnet hero ----------
@@ -2208,7 +2210,7 @@ function homeHTML(p, body) {
   return `<div class="doc home"><section class="hero">
       <div class="hero-t"><span class="tag">FOMA documentation</span><h1 class="hh"><span>how</span> <span>foma</span> <span>works<em>.</em></span></h1>
         <p class="lede">${inline(p.lede)} Learn how ideas keep their record, how every order stays inside your limits, and how to read each receipt.</p>
-        <button class="hsearch" type="button" data-act="pal">${I.search}<span>Search the docs or ask a question</span><kbd>${KBD}</kbd></button>
+        <button class="hsearch" type="button" data-act="pal">${I.search}<span>${SEARCH_TXT}</span><kbd>${KBD}</kbd></button>
         <div class="pop"><span>Popular</span>${pop.map(id => `<a href="#${id}">${esc(PAGE[id].title)}</a>`).join('')}</div></div>
       <div class="hero-v" aria-hidden="true">${magnetScene()}</div></section>
     <div class="hstats reveal"><div><b class="num" data-count="${PAGES.length}">${PAGES.length}</b><span>pages</span></div><div><b class="num" data-count="${WIDGET_COUNT}">${WIDGET_COUNT}</b><span>live explainers</span></div><div><b class="num">0</b><span>seed phrases we’ll ever ask for</span></div></div>
@@ -2221,7 +2223,7 @@ function pageHTML(p, body) {
   const i = PAGES.indexOf(p), prev = PAGES[i - 1], next = PAGES[i + 1];
   return `<article class="doc"><div class="crumb"><a href="#welcome">Docs</a>${I.chev}<span>${esc(p.section)}</span></div>
     <h1>${esc(p.title)}</h1><p class="lede">${inline(p.lede)}</p>
-    <div class="meta"><span class="chip">${I.clock}${esc(p.time)} read</span><span>Updated ${UPDATED}</span><span class="grow"></span><button class="btn sm ghost" type="button" data-act="copymd">${I.md}<span>Copy as Markdown</span></button><button class="btn sm ghost" type="button" data-act="askpage">${I.spark}<span>Ask about this page</span></button></div>
+    <div class="meta"><span class="chip">${I.clock}${esc(p.time)} read</span><span>Updated ${UPDATED}</span><span class="grow"></span><button class="btn sm ghost" type="button" data-act="copymd">${I.md}<span>Copy as Markdown</span></button>${AI_ON ? `<button class="btn sm ghost" type="button" data-act="askpage">${I.spark}<span>Ask about this page</span></button>` : ''}</div>
     <div class="hr"></div><div class="prose">${body}</div>
     <nav class="pager" aria-label="Previous and next pages">${prev ? `<a class="prev" href="#${prev.id}"><span>${I.arrowL} Previous</span><b>${esc(prev.title)}</b></a>` : '<span></span>'}${next ? `<a class="next" href="#${next.id}"><span>Next ${I.arrowR}</span><b>${esc(next.title)}</b></a>` : ''}</nav>
     ${footHTML()}</article>`;
@@ -2312,7 +2314,7 @@ function openPalette(q = '', forPage = null) {
   palState = { sel: 0, items: [], mode: 'search', page: forPage };
   const back = document.createElement('div'); back.className = 'back'; back.dataset.act = 'palclose';
   const pal = document.createElement('div'); pal.className = 'pal'; pal.setAttribute('role', 'dialog'); pal.setAttribute('aria-modal', 'true'); pal.setAttribute('aria-label', 'Search the docs');
-  pal.innerHTML = `<div class="pin">${I.search}<input id="palq" type="text" placeholder="${forPage ? `Ask about ${esc(PAGE[forPage].title)}, or search` : 'Search the docs or ask a question'}" autocomplete="off" spellcheck="false" aria-label="Search the docs" value="${esc(q)}"><button class="kbtn" type="button" data-act="palclose" aria-label="Close search"><kbd>Esc</kbd></button></div><div class="res" id="palres" role="listbox" aria-label="Results"></div><div class="ft"><span><kbd>↑</kbd><kbd>↓</kbd>move</span><span><kbd>↵</kbd>open</span><span class="grow"></span><span class="ft-ai">${I.spark}Claude answers from these docs</span></div>`;
+  pal.innerHTML = `<div class="pin">${I.search}<input id="palq" type="text" placeholder="${forPage ? `Ask about ${esc(PAGE[forPage].title)}, or search` : SEARCH_TXT}" autocomplete="off" spellcheck="false" aria-label="Search the docs" value="${esc(q)}"><button class="kbtn" type="button" data-act="palclose" aria-label="Close search"><kbd>Esc</kbd></button></div><div class="res" id="palres" role="listbox" aria-label="Results"></div><div class="ft"><span><kbd>↑</kbd><kbd>↓</kbd>move</span><span><kbd>↵</kbd>open</span><span class="grow"></span>${AI_ON ? `<span class="ft-ai">${I.spark}Claude answers from these docs</span>` : `<span class="ft-ai">${I.book}Searches all ${PAGES.length} pages</span>`}</div>`;
   document.body.append(back, pal); document.body.classList.add('palopen');
   const inp = $('#palq'); inp.focus(); inp.addEventListener('input', () => { palState.mode = 'search'; palState.sel = -1; palRender(); }); inp.addEventListener('keydown', palKeys);
   palRender();
@@ -2327,14 +2329,14 @@ function palRender() {
     const recent = store.get('recent', []).filter(id => PAGE[id] && id !== 'welcome').slice(0, 3);
     if (recent.length) html += `<div class="grp">Recent</div>` + recent.map(id => itemHTML({ href: id }, `<span class="ii">${pic(id)}</span><span class="tx"><b>${esc(PAGE[id].title)} <span>${esc(PAGE[id].section)}</span></b></span>`)).join('');
     html += `<div class="grp">Popular</div>` + ['quickstart', 'execution-policy', 'order-states', 'read-receipts'].filter(id => !recent.includes(id)).map(id => itemHTML({ href: id }, `<span class="ii">${pic(id)}</span><span class="tx"><b>${esc(PAGE[id].title)} <span>${esc(PAGE[id].section)}</span></b></span>`)).join('');
-    html += `<div class="grp">Ask Claude</div>` + ASK_EX.map(x => itemHTML({ ask: x }, `<span class="ii ai">${I.spark}</span><span class="tx"><b>${esc(x)}</b></span>`, 'ask')).join('');
+    if (AI_ON) html += `<div class="grp">Ask Claude</div>` + ASK_EX.map(x => itemHTML({ ask: x }, `<span class="ii ai">${I.spark}</span><span class="tx"><b>${esc(x)}</b></span>`, 'ask')).join('');
   } else {
-    const { terms, out } = search(q); const ql = QLIKE(q);
+    const { terms, out } = search(q); const ql = AI_ON && QLIKE(q);
     const askI = () => itemHTML({ ask: q }, `<span class="ii ai">${I.spark}</span><span class="tx"><b>Ask Claude <span>answers with citations</span></b><small>“${esc(q)}”</small></span>`, 'ask');
     if (ql) html += askI();
     if (out.length) html += `<div class="grp">${out.length} result${out.length === 1 ? '' : 's'}</div>` + out.map(e => itemHTML({ href: e.href }, `<span class="ii">${e.kind === 'gloss' ? I.book : e.kind === 'faq' ? I.msg : e.kind === 'page' ? pic(e.href) : I.hash}</span><span class="tx"><b>${hlTerms(e.title, terms)} <span>${esc(e.crumb)}</span></b>${e.text ? `<small>${snippet(e.text, terms)}</small>` : ''}</span>`)).join('');
-    else html += `<div class="empty">No page matches “${esc(q)}”.${ql ? '' : ' Claude may still be able to answer it.'}</div>`;
-    if (!ql) html += askI();
+    else html += `<div class="empty">No page matches “${esc(q)}”.${!AI_ON ? ' Try a shorter word.' : ql ? '' : ' Claude may still be able to answer it.'}</div>`;
+    if (AI_ON && !ql) html += askI();
   }
   res.innerHTML = html; palState.items = items; palSel(0);
 }
